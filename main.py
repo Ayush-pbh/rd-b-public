@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, Query
 import pandas as pd
 import numpy as np
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,17 +12,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 @app.get("/data")
-def get_data():
+def get_data(offset: int = Query(0, ge=0), limit: int = Query(10, ge=1)):
     # Read the CSV file
     df = pd.read_csv("country_aggregate.csv")
     
     # Replace NaN values with None or a suitable value
     df.fillna(value=np.nan, inplace=True)
+    # Slice the DataFrame to get the specified range of records
+    paginated_df = df.iloc[offset:offset+limit]
+    
     # Initialize an empty list to store JSON formatted data
     json_data = []
     
     # Loop through each row in the DataFrame
-    for index, row in df.iterrows():
+    for index, row in paginated_df.iterrows():
         # Create a dictionary for the current row
         row_dict = {
             "country": row["country"],
@@ -35,10 +38,25 @@ def get_data():
         # Append the row dictionary to the list
         json_data.append(row_dict)
         row_dict = json.dumps(json_data).replace('NaN', '-1')
-        print(row_dict)
     
     # Return the list of dictionaries as JSON
     return Response(content=row_dict, media_type="application/json")
 
 
 # get_data()
+
+# @app.get("/data")
+# def get_data(offset: int = Query(0, ge=0), limit: int = Query(10, ge=1)):
+#     # Read the CSV file
+#     df = pd.read_csv("country_aggregate.csv")
+    
+#     # Replace NaN values with None or a suitable value
+#     df.fillna(value=np.nan, inplace=True)
+    
+   
+#     # Convert the sliced DataFrame to JSON format
+#     json_data = paginated_df.to_json(orient="records", default_handler=str)
+    
+#     # Return the JSON data
+#     return Response(content=json_data, media_type="application/json")
+
